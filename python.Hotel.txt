@@ -1,0 +1,179 @@
+import numpy as np 
+import matplotlib.pyplot as plt 
+import seaborn as sns 
+import pandas as pd 
+
+df = pd.read_csv(r'C:\Users\TOSHIBA\Documents\Hotel/hotel_bookings.csv')
+
+type(df)
+
+df.shape
+
+df.duplicated().sum()
+
+df.drop_duplicates(inplace = True)
+
+df.shape
+
+df.dtypes
+
+df.head(3)
+
+df.columns
+
+filterage = (df['children'] ==0) & (df['babies'] ==0) & (df['adults'] ==0)
+
+filterage
+
+df[filterage]
+
+df[filterage].shape
+
+df[~filterage].shape
+
+data = dfd = df[~filterage]
+
+data.shape
+
+df.columns
+
+df[['lead_time' , 'total_of_special_requests' , 'adr']].describe()
+
+df[['lead_time' , 'total_of_special_requests' , 'adr']].describe().T
+
+data.info()
+
+for col in ['lead_time' , 'total_of_special_requests' , 'adr']:
+    print (col)
+
+for col in ['lead_time' , 'total_of_special_requests' , 'adr']:
+    print ('feature name: {}'.format(col))
+
+for col in ['lead_time' , 'total_of_special_requests' , 'adr']:
+    print ('feature name: {}'.format(col))
+
+    for i in range(90,100,1):
+        quantile_values = np.quantile(data[col], q=0.9)
+        print ('{}th quantile_values is {}'.format(i,quantile_values))
+    print('\n')
+
+not_canceled = data[data['is_canceled']==0]
+
+not_canceled
+
+country_data = not_canceled['country'].value_counts().reset_index()
+
+country_data.columns = ['country ', 'No of guest ']
+
+country_data
+
+!pip install chart_studio
+!pip install plotly
+
+import chart_studio.plotly as py
+import plotly.graph_objs as go
+import plotly.express as px
+from plotly.offline import download_plotlyjs , init_notebook_mode , plot , iplot 
+init_notebook_mode(connected=True)
+
+print(country_data.columns)
+
+fig = px.choropleth(
+    data_frame=country_data, 
+    locations=country_data['country '], 
+    color=country_data['No of guest '], 
+    hover_name=country_data['country '],
+    title='Home country of Guests'
+)
+# Mengatur ukuran gambar menggunakan update_layout
+fig.update_layout(
+    width=1000,  # Lebar gambar dalam piksel
+    height=600   # Tinggi gambar dalam piksel
+)
+fig.show()
+
+data.columns
+
+pivot = pd.crosstab(index = data['reserved_room_type'] ,  columns = data['assigned_room_type'] , margins= True)
+
+pivot
+
+pivot_normalize = pd.crosstab(index = data['reserved_room_type'] ,  columns = data['assigned_room_type'] , margins= True , normalize= 'index').round(2)*100
+
+pivot_normalize
+
+data['market_segment'].value_counts()
+
+data['market_segment'].value_counts().values
+
+fig = px.pie(data ,
+             values =data['market_segment'].value_counts().values ,
+             names =data['market_segment'].value_counts().index
+            )
+
+fig.show()
+
+data.columns
+
+plt.figure(figsize = (20,10))
+sns.barplot( x='market_segment' , y= 'adr' , data = data ,  hue ='reserved_room_type' , ci= None)
+
+data.head(3)
+
+data.columns
+
+data['arrival_date_month'].unique()
+
+array(['July', 'August', 'September', 'October', 'November', 'December',
+       'January', 'February', 'March', 'April', 'May', 'June'],
+      dtype=object)
+
+dict_mont = {'July' : 7, 'August' : 8, 'September' : 9, 'October' :10, 'November' :11, 'December' :12,
+       'January' : 1, 'February' : 2, 'March' : 3, 'April' : 4, 'May' : 5, 'June' : 6}
+
+dict_mont
+
+import warnings 
+from warnings import filterwarnings
+filterwarnings('ignore')
+
+data['arrival_month'] = data['arrival_date_month'].map(dict_mont)
+
+data.columns
+
+data[['arrival_date_year',
+     'arrival_month' , 'arrival_date_month'
+     ]] 
+
+data['arrival_month'] = data['arrival_date_year'].astype(str) + '-' + data['arrival_month'].astype(str) + '-' + data['arrival_date_day_of_month'].astype(str)
+
+data.head(2)
+
+data.columns
+
+data[['adults', 'children', 'babies']]
+
+data['Total_guest'] = data['adults'] + data['children'] + data['babies']
+
+data.head(2)
+
+data.columns
+
+data[[ 'arrival_month', 'Total_guest']]
+
+dataNocancel = data[data['is_canceled']==0]
+
+guest_arrival= dataNocancel.groupby(['arrival_month'])['Total_guest'].sum()
+
+guest_arrival.plot(figsize=(10,6))
+
+sns.displot(guest_arrival.values)
+
+sns.displot(guest_arrival.values, kind ='kde')
+
+np.mean(guest_arrival.values)
+
+np.median(guest_arrival.values)
+
+np.std(guest_arrival.values)
+
