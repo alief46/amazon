@@ -1,0 +1,72 @@
+import pandas as pd 
+import matplotlib.pyplot as plt 
+import seaborn as sns 
+import numpy as np 
+
+import os 
+
+os.listdir(r'C:\Users\TOSHIBA\Documents\projeck data analis\uber projeck')
+
+uber_15 =pd.read_csv(r'C:\Users\TOSHIBA\Documents\projeck data analis\uber projeck/uber-raw-data-janjune-15_sample.csv')
+
+uber_15.shape
+
+uber_15.duplicated().sum()
+
+uber_15.drop_duplicates(inplace = True)
+
+type(uber_15['Pickup_date'][0])
+
+uber_15['Pickup_date'] = pd.to_datetime(uber_15['Pickup_date'])
+
+uber_15.dtypes
+
+uber_15['month'] = uber_15['Pickup_date'].dt.month_name()
+
+uber_15['month'].value_counts().plot(kind = 'bar')
+
+uber_15['weekday'] = uber_15['Pickup_date'].dt.day_name()
+uber_15['day'] = uber_15['Pickup_date'].dt.day
+uber_15['hour']= uber_15['Pickup_date'].dt.hour
+uber_15['minute'] = uber_15['Pickup_date'].dt.minute
+
+uber_15.head(4)
+
+pivot = pd.crosstab( index = uber_15['month'] , columns = uber_15['weekday'])
+
+pivot.plot(kind = 'bar', figsize=(8,6))
+
+summary = uber_15.groupby([ 'weekday' , 'hour' ]  , as_index= False ).size()
+
+plt.figure(figsize =(8,6))
+sns.pointplot(x= 'hour' , y = 'size' , hue = 'weekday' , data = summary)
+
+os.listdir(r'C:\Users\TOSHIBA\Documents\projeck data analis\uber projeck')
+
+uber_foil = pd.read_csv(r'C:\Users\TOSHIBA\Documents\projeck data analis\uber projeck/Uber-Jan-Feb-FOIL.csv')
+
+uber_foil.shape
+
+uber_foil.head(3)
+
+!pip install chart-studio 
+## chart_studio provides a web-service for hosting graphs! 
+!pip install plotly
+
+
+
+import chart_studio.plotly as py
+import plotly.graph_objs as go
+import plotly.express as px
+ 
+from plotly.offline import download_plotlyjs , init_notebook_mode , plot , iplot 
+ 
+init_notebook_mode(connected=True)
+
+
+
+
+uber_foil.columns
+
+px.box(x='dispatching_base_number', y = 'active_vehicles', data_frame = uber_foil )
+
