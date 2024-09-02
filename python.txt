@@ -1,0 +1,13 @@
+import numpy as np 
+import matplotlib.pyplot as plt 
+import seaborn as sns 
+import pandas as pd 
+
+import sqlite3
+
+con = sqlite3.connect(r'C:\Users\TOSHIBA\Documents\amazon/.database.sqlite')
+
+type(con)
+
+pd.read_sql_query('SELECT * FROM REVIEWS',con)
+
