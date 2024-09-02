@@ -1,0 +1,129 @@
+import numpy as np
+import matplotlib.pyplot as plt 
+import seaborn as sns 
+import pandas as pd 
+
+df = pd.read_csv(r'C:\Users\TOSHIBA\Documents\projeck data analis\bitcoint/bitcoin_price_Training - Training.csv')
+
+df.head(3)
+
+df.columns
+
+df.shape
+
+df.info()
+
+df.describe().T
+
+df.dtypes
+
+df['Date'] = df['Date'].astype('datetime64[ns]') 
+
+df['Date'].min()
+
+df['Date'].max()
+
+df['Date']
+
+df.isnull().sum()
+
+df.head(3)
+
+df.tail(5)
+
+data = df.sort_index(ascending = False ).reset_index()
+
+data.drop('index' , axis=1 , inplace = True )
+
+data
+
+data.columns
+
+plt.figure(figsize = (20,12))
+for index , col in enumerate(['Open', 'High', 'Low', 'Close'] , 1):
+       plt.subplot(2,2,index)
+       plt.plot(df['Date'] , df[col])
+
+data.shape
+
+bitcoin_sample = data[0:50]
+
+!pip install chart-studio
+
+!pip install plotly
+import chart_studio.plotly as py
+import plotly.graph_objs as go
+import plotly.express as px
+from plotly.offline import download_plotlyjs , init_notebook_mode , plot , iplot
+
+init_notebook_mode(connected=True)
+
+trace = go.Candlestick(x=bitcoin_sample['Date'] , 
+                high =bitcoin_sample['High'] , 
+                open = bitcoin_sample['Open'] , 
+                close = bitcoin_sample['Close'] , 
+                low = bitcoin_sample['Low'])
+
+
+
+Candle_data = [trace]
+layout = {
+    'title': 'Bitcoin Historical Price',
+    'xaxis': {'title': 'Date'}  # Corrected key
+}
+fig = go.Figure(data=Candle_data, layout=layout)
+fig.update_layout(xaxis_rangeslider_visible=False)
+fig.show()
+
+data['Close']
+
+data['Close'].plot()
+
+data.set_index('Date' , inplace = True)
+
+data
+
+data['Close'].plot()
+
+np.log1p(data['Close']).plot()
+
+plt.figure(figsize=(20,6))
+plt.subplot(1, 2, 1)
+data['Close'].plot()
+plt.title('No scale ')
+plt.subplot(1, 2, 2)
+np.log1p(data['Close']).plot()
+plt.title('No scale ')
+plt.title('Log scale ')
+plt.yscale('log')
+
+data['Close'].resample('Y').mean()
+
+data['Close'].resample('Y').mean().plot()
+
+data['Close'].resample('M').mean().plot()
+
+data['Close'].resample('Q').mean()
+
+data['Close_price_pct_change'] = data['Close'].pct_change()*100
+
+data['Close_price_pct_change'] 
+
+data['Close_price_pct_change'] .plot()
+
+!pip install cufflinks
+!pip install plotly
+import chart_studio.plotly as py
+import plotly.graph_objs as go
+import plotly.express as px
+from plotly.offline import download_plotlyjs , init_notebook_mode , plot , iplot
+init_notebook_mode(connected=True)
+
+import cufflinks as cf
+
+cf.go_offline()
+
+type(data['Close_price_pct_change'])
+
+data['Close_price_pct_change'].iplot()
+
