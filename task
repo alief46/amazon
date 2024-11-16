@@ -1,0 +1,106 @@
+import pandas as pd 
+gossipcop_fake = pd.read_csv(r'C:\Users\TOSHIBA\Documents\projeck data analis\breaking news\FakeNewsNet-master\dataset\gossipcop_fake.csv')
+gossipcop_real = pd.read_csv(r'C:\Users\TOSHIBA\Documents\projeck data analis\breaking news\FakeNewsNet-master\dataset\gossipcop_real.csv')
+politifact_fake = pd.read_csv(r'C:\Users\TOSHIBA\Documents\projeck data analis\breaking news\FakeNewsNet-master\dataset\politifact_fake.csv')
+politifact_real = pd.read_csv(r'C:\Users\TOSHIBA\Documents\projeck data analis\breaking news\FakeNewsNet-master\dataset\politifact_real.csv')
+# Menggabungkan semua data
+combined_data = pd.concat([gossipcop_fake, gossipcop_real, politifact_fake, politifact_real], ignore_index=True)
+
+# Menampilkan hasil penggabungan
+print(combined_data.head())
+
+pip install tweepy
+import tweepy
+
+# Menyediakan kredensial API Twitter
+consumer_key = 'your_consumer_key'
+consumer_secret = 'your_consumer_secret'
+access_token = 'your_access_token'
+access_token_secret = 'your_access_token_secret'
+
+# Otentikasi Twitter
+auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
+auth.set_access_token(access_token, access_token_secret)
+api = tweepy.API(auth)
+
+# Mendapatkan interaksi tweet
+def get_tweet_interactions(tweet_ids):
+    interactions = []
+    for tweet_id in tweet_ids:
+        try:
+            tweet = api.get_status(tweet_id)
+            # Ambil jumlah suka, retweet, dan komentar
+            tweet_data = {
+                'tweet_id': tweet_id,
+                'likes': tweet.favorite_count,
+                'retweets': tweet.retweet_count,
+
+                'comments': tweet.reply_count if hasattr(tweet, 'reply_count') else 0
+            }
+            interactions.append(tweet_data)
+        except tweepy.TweepError as e:
+            print(f"Error fetching tweet {tweet_id}: {e}")
+    return interactions
+
+# Ambil interaksi untuk semua tweet_id
+df['interactions'] = df['tweet_ids'].apply(lambda x: get_tweet_interactions(eval(x)))  # eval untuk mengubah string list menjadi list
+def calculate_popularity_score(interactions):
+    total_popularity = sum([item['likes'] + item['retweets'] + item['comments'] for item in interactions])
+    return total_popularity
+
+# Hitung skor popularitas untuk setiap artikel berita
+df['popularity_score'] = df['interactions'].apply(calculate_popularity_score)
+
+# Menampilkan beberapa baris data untuk melihat hasilnya
+print(df[['id', 'title', 'popularity_score']].head())
+
+pip install transformers torch
+
+from transformers import pipeline
+
+# Memuat pipeline NER dari Hugging Face
+ner_pipeline = pipeline("ner", model="dbmdz/bert-large-cased-finetuned-conll03-english")
+
+# Cek hasil NER pada contoh kalimat
+example_text = "Elon Musk is the CEO of SpaceX and Tesla, based in California."
+ner_results = ner_pipeline(example_text)
+
+print(ner_results)
+
+def extract_entities_with_transformers(title):
+    ner_results = ner_pipeline(title)
+    entities = {'persons': [], 'organizations': [], 'locations': []}
+    for result in ner_results:
+        if result['entity'] == 'B-PER' or result['entity'] == 'I-PER':
+            entities['persons'].append(result['word'])
+        elif result['entity'] == 'B-ORG' or result['entity'] == 'I-ORG':
+            entities['organizations'].append(result['word'])
+        elif result['entity'] == 'B-GPE' or result['entity'] == 'I-GPE':
+            entities['locations'].append(result['word'])
+    return entities
+
+# Terapkan NER ke setiap judul berita
+df['entities'] = df['title'].apply(extract_entities_with_transformers)
+
+# Menampilkan hasil entitas yang diekstrak
+print(df[['title', 'entities']].head())
+
+from collections import Counter
+import matplotlib.pyplot as plt
+
+# Gabungkan semua entitas yang ditemukan dalam satu list
+all_entities = sum(df['entities'].apply(lambda x: x['persons'] + x['organizations'] + x['locations']).tolist(), [])
+
+# Hitung frekuensi kemunculan entitas
+entity_counts = Counter(all_entities)
+
+# Pilih 10 entitas paling sering muncul
+top_entities = entity_counts.most_common(10)
+
+# Visualisasikan frekuensi entitas
+labels, counts = zip(*top_entities)
+plt.barh(labels, counts)
+plt.xlabel('Count')
+plt.title('Top 10 Most Frequent Named Entities')
+plt.show()
+
