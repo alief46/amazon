@@ -1,0 +1,135 @@
+import pandas as pd 
+import numpy as np 
+import matplotlib.pyplot as plt 
+import seaborn as sns 
+from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LinearRegression
+import joblib
+from flask import Flask, request, jsonify
+from sklearn.datasets import load_iris
+
+# 1. Membaca Data Excel
+file_path = r'C:\Users\TOSHIBA\Documents\projeck data analis\family financial\family_financial_and_transactions_data.xlsx'
+df = pd.read_excel(file_path)
+
+# Menampilkan 5 baris pertama dari dataset
+print(df.head())
+
+# Menangani missing values dan melihat tipe data
+df.isnull().sum()
+print(df.dtypes)
+print(df.describe())
+
+# Rename kolom untuk kemudahan analisis
+df.rename(columns={'Member ID': 'MemberID'}, inplace=True)
+
+# 2. Analisis Pengeluaran Keluarga dan Anggota
+# Pengeluaran kartu kredit di tingkat keluarga
+family_spending = df.groupby('Family ID')['Credit Card Spending'].sum()
+
+# Pengeluaran kartu kredit di tingkat anggota keluarga
+member_spending = df.groupby(['Family ID', 'MemberID'])['Credit Card Spending'].sum()
+
+# Menghitung metrik keuangan keluarga
+family_metrics = df.groupby('Family ID').agg({
+    'Income': 'sum',
+    'Monthly Expenses': 'sum',
+    'Savings': 'sum',
+    'Credit Card Spending': 'sum'
+}).reset_index()
+
+# Menambahkan rasio tambahan pada data keluarga
+family_metrics['Savings-to-Income Ratio'] = family_metrics['Savings'] / family_metrics['Income']
+family_metrics['Expenses-to-Income Ratio'] = family_metrics['Monthly Expenses'] / family_metrics['Income']
+print(family_metrics.head())
+
+# Metrik keuangan anggota keluarga
+member_metrics = df.groupby(['Family ID', 'MemberID']).agg({
+    'Monthly Expenses': 'sum',
+    'Savings': 'sum',
+    'Credit Card Spending': 'sum'
+}).reset_index()
+print(member_metrics.head())
+
+# 3. Matriks Korelasi
+# Membuat matriks korelasi
+corr_matrix = family_metrics[['Income', 'Monthly Expenses', 'Savings', 'Credit Card Spending']].corr()
+
+# Visualisasi korelasi menggunakan heatmap
+plt.figure(figsize=(6, 4))  # Lebar=6, Tinggi=4
+sns.heatmap(corr_matrix, annot=True, cmap='coolwarm', cbar=True)
+plt.title('Correlation Matrix of Financial Metrics')
+plt.show()
+
+# 4. Menambah Kolom Skor Keuangan pada Data
+# Contoh: Rasio tabungan terhadap pendapatan
+df['Savings_to_Income'] = df['Savings'] / df['Income']
+
+# Menghitung skor keuangan
+df['Score'] = (
+    df['Savings_to_Income'] * 30 +
+    (1 - df['Monthly Expenses'] / df['Income']) * 20 +
+    (1 - df['Loan Payments'] / df['Income']) * 20 +
+    (1 - df['Credit Card Spending'] / df['Amount']) * 15 +
+    df['Financial Goals Met (%)'] * 5
+)
+
+# Visualisasi distribusi pengeluaran per kategori
+sns.barplot(x='Category', y='Amount', data=df, ci=None)
+plt.title('Spending Distribution Across Categories')
+plt.show()
+
+# 5. Pelatihan Model Machine Learning
+# Contoh dengan dataset Iris
+data = load_iris()
+X = data.data
+y = data.target
+
+# Split dataset menjadi training dan testing
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Melatih model Random Forest
+model = RandomForestClassifier(n_estimators=100)
+model.fit(X_train, y_train)
+
+# Simpan model ke file
+joblib.dump(model, 'financial_model.pkl')
+
+# 6. Flask API untuk Prediksi Skor Keuangan
+app = Flask(__name__)
+
+@app.route('/predict', methods=['POST'])
+def predict():
+    # Ambil data dari permintaan
+    data = request.get_json()
+
+    # Preproses data input
+    family_data = pd.DataFrame(data['family_data'])
+    member_data = pd.DataFrame(data['member_data'])
+
+    # Proses data input
+    X = pd.get_dummies(family_data[['Family ID', 'MemberID', 'Month']])
+
+    # Prediksi skor keuangan
+    score = model.predict(X)
+
+    # Buat insight berdasarkan skor
+    insights = f"Your financial score is {score[0]:.2f}. "
+    if score[0] < 50:
+        insights += "Your savings are below recommended levels, which affects your score."
+    else:
+        insights += "Your financial health is on track."
+
+    return jsonify({"score": score[0], "insights": insights})
+
+if __name__ == '__main__':
+    app.run(debug=True)
+
+# 7. Hyperparameter Tuning dengan GridSearchCV
+param_grid = {'n_estimators': [100, 200, 300], 'max_depth': [None, 10, 20]}
+grid_search = GridSearchCV(RandomForestClassifier(), param_grid, cv=5)
+grid_search.fit(X_train, y_train)
+
+# Parameter terbaik dari GridSearch
+print(f"Best Parameters: {grid_search.best_params_}")
